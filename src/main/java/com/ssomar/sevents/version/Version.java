@@ -30,34 +30,60 @@ public class Version {
     private static boolean is1v21v10 = false;
     private static boolean is1v21v11 = false;
     private static boolean is26v1 = false;
+    private static boolean is26v2 = false;
+    private static boolean is26v3 = false;
 
     public static void initVersion(){
-        is26v1 = Bukkit.getServer().getVersion().contains("26.1");
-        is1v21v11 = Bukkit.getServer().getVersion().contains("1.21.11");
-        is1v21v10 = Bukkit.getServer().getVersion().contains("1.21.10");
-        is1v21v9 = Bukkit.getServer().getVersion().contains("1.21.9");
-        is1v21v8 = Bukkit.getServer().getVersion().contains("1.21.8");
-        is1v21v7 = Bukkit.getServer().getVersion().contains("1.21.7");
-        is1v21v6 = Bukkit.getServer().getVersion().contains("1.21.6");
-        is1v21v5 = Bukkit.getServer().getVersion().contains("1.21.5");
-        is1v21v4 = Bukkit.getServer().getVersion().contains("1.21.4");
-        is1v21v3 = Bukkit.getServer().getVersion().contains("1.21.3");
-        is1v21 = Bukkit.getServer().getVersion().contains("1.21");
-        is1v20 = Bukkit.getServer().getVersion().contains("1.20");
-        is1v19v4 = Bukkit.getServer().getVersion().contains("1.19.4");
-        is1v19 = Bukkit.getServer().getVersion().contains("1.19");
-        is1v18 = Bukkit.getServer().getVersion().contains("1.18");
-        is1v17 = Bukkit.getServer().getVersion().contains("1.17");
-        is1v16v1 = Bukkit.getServer().getVersion().contains("1.16.1");
-        is1v16 = Bukkit.getServer().getVersion().contains("1.16");
-        is1v15 = Bukkit.getServer().getVersion().contains("1.15");
-        is1v14 = Bukkit.getServer().getVersion().contains("1.14");
-        is1v13 = Bukkit.getServer().getVersion().contains("1.13");
-        is1v12 = Bukkit.getServer().getVersion().contains("1.12");
-        is1v11 = Bukkit.getServer().getVersion().contains("1.11") && !is1v21v11;
-        is1v10 = Bukkit.getServer().getVersion().contains("1.10") && !is1v21v10;
-        is1v9 = Bukkit.getServer().getVersion().contains("1.9") && !is1v21v9;
-        is1v8 = Bukkit.getServer().getVersion().contains("1.8") && !is1v21v8;
+        initVersion(Bukkit.getServer().getVersion());
+    }
+
+    /* serverVersion is Bukkit's version string, e.g. "26.3-26-a255185 (MC: 26.3)" or "git-Paper-196 (MC: 1.20.1)" */
+    static void initVersion(String serverVersion){
+        String mc = getMinecraftVersion(serverVersion);
+        is26v3 = isVersion(mc, "26.3");
+        is26v2 = isVersion(mc, "26.2");
+        is26v1 = isVersion(mc, "26.1");
+        is1v21v11 = isVersion(mc, "1.21.11");
+        is1v21v10 = isVersion(mc, "1.21.10");
+        is1v21v9 = isVersion(mc, "1.21.9");
+        is1v21v8 = isVersion(mc, "1.21.8");
+        is1v21v7 = isVersion(mc, "1.21.7");
+        is1v21v6 = isVersion(mc, "1.21.6");
+        is1v21v5 = isVersion(mc, "1.21.5");
+        is1v21v4 = isVersion(mc, "1.21.4");
+        is1v21v3 = isVersion(mc, "1.21.3");
+        is1v21 = isVersion(mc, "1.21");
+        is1v20 = isVersion(mc, "1.20");
+        is1v19v4 = isVersion(mc, "1.19.4");
+        is1v19 = isVersion(mc, "1.19");
+        is1v18 = isVersion(mc, "1.18");
+        is1v17 = isVersion(mc, "1.17");
+        is1v16v1 = isVersion(mc, "1.16.1");
+        is1v16 = isVersion(mc, "1.16");
+        is1v15 = isVersion(mc, "1.15");
+        is1v14 = isVersion(mc, "1.14");
+        is1v13 = isVersion(mc, "1.13");
+        is1v12 = isVersion(mc, "1.12");
+        is1v11 = isVersion(mc, "1.11");
+        is1v10 = isVersion(mc, "1.10");
+        is1v9 = isVersion(mc, "1.9");
+        is1v8 = isVersion(mc, "1.8");
+    }
+
+    /* The part after "MC: ". Matching on it (and not on the whole string) keeps a build number or a 26.x.y version
+     * from being taken for an old release: "26.1.8" contains "1.8", "26.1.12" contains "1.12". */
+    static String getMinecraftVersion(String serverVersion){
+        int index = serverVersion.indexOf("MC: ");
+        if (index == -1) return serverVersion;
+        String mc = serverVersion.substring(index + 4);
+        int end = mc.indexOf(')');
+        return (end == -1 ? mc : mc.substring(0, end)).trim();
+    }
+
+    /* "1.21" matches 1.21 and every 1.21.x, like the former contains() did, but not 1.210 nor 26.1.21 */
+    private static boolean isVersion(String mc, String version){
+        if (!mc.contains(".") || mc.contains(" ")) return mc.contains(version);
+        return mc.equals(version) || mc.startsWith(version + ".") || mc.startsWith(version + "-");
     }
 
 
@@ -188,6 +214,14 @@ public class Version {
         return is26v1;
     }
 
+    public static boolean is26v2() {
+        return is26v2;
+    }
+
+    public static boolean is26v3() {
+        return is26v3;
+    }
+
     /* The server is in 1.12 or - ? */
     public static boolean is1v11Less() {
         return is1v8() || is1v9() || is1v10() || is1v11() ;
@@ -252,7 +286,17 @@ public class Version {
         return (!is1v21() && is1v21Plus()) || is1v21v3() || is1v21v4() || is1v21v5() || is1v21v6() || is1v21v7() || is1v21v8() || is1v21v9() || is1v21v10() || is1v21v11() || is26v1Plus();
     }
 
+    /* Like the other "Plus" checks: true for every version that isn't an older one, so a Minecraft version
+     * released after this build is handled like the newest one. */
     public static boolean is26v1Plus() {
-        return is26v1() ;
+        return is26v1() || is26v2Plus();
+    }
+
+    public static boolean is26v2Plus() {
+        return is26v2() || is26v3Plus();
+    }
+
+    public static boolean is26v3Plus() {
+        return !is1v21() && is1v21Plus() && !is26v1() && !is26v2();
     }
 }
