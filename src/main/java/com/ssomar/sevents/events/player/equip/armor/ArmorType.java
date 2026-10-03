@@ -64,13 +64,15 @@ public enum ArmorType {
 
     public static boolean canReplaceUsingHotBar(final ItemStack itemStack) {
         if (PlayerEquipArmorListener.isAirOrNull(itemStack)) return false;
-        String type = itemStack.getType().name();
-        if (type.equals("CARVED_PUMPKIN")) {
-            /* a vanilla carved pumpkin can't be worn with a right click, but one with a swappable equippable component can */
-            if (Version.is1v21v3Plus() && itemStack.hasItemMeta() && itemStack.getItemMeta().hasEquippable())
-                return itemStack.getItemMeta().getEquippable().isSwappable();
-            return false;
+        /* 1.21.3+: an item with an equippable component is put on with a right click only if the component is swappable
+         * (a carved pumpkin made swappable can, an item worn on the head with swappable: false can't) */
+        if (Version.is1v21v3Plus() && itemStack.hasItemMeta()) {
+            ItemMeta itemMeta = itemStack.getItemMeta();
+            if (itemMeta != null && itemMeta.hasEquippable()) return itemMeta.getEquippable().isSwappable();
         }
+        String type = itemStack.getType().name();
+        /* a vanilla carved pumpkin can't be worn with a right click */
+        if (type.equals("CARVED_PUMPKIN")) return false;
         return true;
     }
 
