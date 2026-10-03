@@ -26,6 +26,12 @@ public enum ArmorType {
      */
     public static ArmorType matchType(final ItemStack itemStack, boolean noHead) {
         if (PlayerEquipArmorListener.isAirOrNull(itemStack)) return null;
+        /* The equippable component decides first (1.21.3+): an item can be worn in another slot than its material's one
+         * (e.g. a CARVED_PUMPKIN equippable on the LEGS was seen as a helmet, Discord 1451945672751190189). */
+        if (Version.is1v21v3Plus()) {
+            ArmorType fromComponent = fromEquippable(itemStack);
+            if (fromComponent != null) return fromComponent;
+        }
         String type = itemStack.getType().name();
         //System.out.println("type: "+type);
         if (!noHead && (type.endsWith("_SKULL") || type.endsWith("_HEAD"))) return HELMET;
@@ -59,8 +65,33 @@ public enum ArmorType {
     public static boolean canReplaceUsingHotBar(final ItemStack itemStack) {
         if (PlayerEquipArmorListener.isAirOrNull(itemStack)) return false;
         String type = itemStack.getType().name();
-        if (type.equals("CARVED_PUMPKIN")) return false;
+        if (type.equals("CARVED_PUMPKIN")) {
+            /* a vanilla carved pumpkin can't be worn with a right click, but one with a swappable equippable component can */
+            if (Version.is1v21v3Plus() && itemStack.hasItemMeta() && itemStack.getItemMeta().hasEquippable())
+                return itemStack.getItemMeta().getEquippable().isSwappable();
+            return false;
+        }
         return true;
+    }
+
+    /** ArmorType of the equippable component of the item, or null (no component, or a non armor slot). 1.21.3+ only. */
+    private static ArmorType fromEquippable(final ItemStack itemStack) {
+        if (!itemStack.hasItemMeta()) return null;
+        ItemMeta itemMeta = itemStack.getItemMeta();
+        if (itemMeta == null || !itemMeta.hasEquippable()) return null;
+        EquippableComponent equippable = itemMeta.getEquippable();
+        switch (equippable.getSlot()) {
+            case HEAD:
+                return HELMET;
+            case CHEST:
+                return CHESTPLATE;
+            case LEGS:
+                return LEGGINGS;
+            case FEET:
+                return BOOTS;
+            default:
+                return null;
+        }
     }
 
     public int getSlot() {
