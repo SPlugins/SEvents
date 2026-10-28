@@ -164,10 +164,16 @@ public class PlayerEquipArmorListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void playerRightClickEvent(PlayerRightClickEvent e) {
         Player player = e.getPlayer();
+        ItemStack item = ((PlayerInteractEvent) e.getSourceEvent()).getItem();
+
+        // Not armor: nothing to do. Checked first because getState() below copies the whole block entity (a full barrel costs seconds on Paper)
+        ArmorType newArmorType = ArmorType.matchType(item, true);
+        if (newArmorType == null) return;
+
         if (e.hasBlock()) {
             Block block = e.getBlock();
             // Some blocks have actions when you right click them which stops the client from equipping the armor in hand.
-            if ((block.getState() != null) && !Version.is1v11Less() && block.getState() instanceof Container) {
+            if (!Version.is1v11Less() && block.getState() instanceof Container) {
                 return;
             }
             Material mat = block.getType();
@@ -189,41 +195,36 @@ public class PlayerEquipArmorListener implements Listener {
             }
         }
 
-        ItemStack item = ((PlayerInteractEvent) e.getSourceEvent()).getItem();
-
-        ArmorType newArmorType = ArmorType.matchType(item, true);
-        if (newArmorType != null) {
-            if (ArmorType.canReplaceUsingHotBar(item) &&
-                    ((newArmorType.equals(ArmorType.HELMET) && isAirOrNull(e.getPlayer().getInventory().getHelmet()))
-                            || (newArmorType.equals(ArmorType.CHESTPLATE) && isAirOrNull(e.getPlayer().getInventory().getChestplate()))
-                            || (newArmorType.equals(ArmorType.LEGGINGS) && isAirOrNull(e.getPlayer().getInventory().getLeggings()))
-                            || (newArmorType.equals(ArmorType.BOOTS) && isAirOrNull(e.getPlayer().getInventory().getBoots())))) {
-                PlayerEquipArmorEvent armorEquipEvent = new PlayerEquipArmorEvent(e.getPlayer(), PlayerEquipArmorEvent.EquipMethod.HOTBAR, ArmorType.matchType(item, true), null, item);
+        if (ArmorType.canReplaceUsingHotBar(item) &&
+                ((newArmorType.equals(ArmorType.HELMET) && isAirOrNull(e.getPlayer().getInventory().getHelmet()))
+                        || (newArmorType.equals(ArmorType.CHESTPLATE) && isAirOrNull(e.getPlayer().getInventory().getChestplate()))
+                        || (newArmorType.equals(ArmorType.LEGGINGS) && isAirOrNull(e.getPlayer().getInventory().getLeggings()))
+                        || (newArmorType.equals(ArmorType.BOOTS) && isAirOrNull(e.getPlayer().getInventory().getBoots())))) {
+            PlayerEquipArmorEvent armorEquipEvent = new PlayerEquipArmorEvent(e.getPlayer(), PlayerEquipArmorEvent.EquipMethod.HOTBAR, ArmorType.matchType(item, true), null, item);
+            armorEquipEvent.setCancelled(e.isCancelled());
+            Bukkit.getServer().getPluginManager().callEvent(armorEquipEvent);
+            if (armorEquipEvent.isCancelled()) {
+                e.setCancelled(true);
+                player.updateInventory();
+            }
+        } else if (Version.is1v19v4Plus()) {
+            ItemStack currentArmorPiece = null;
+            if (newArmorType.equals(ArmorType.HELMET) && !isAirOrNull(e.getPlayer().getInventory().getHelmet())) {
+                currentArmorPiece = e.getPlayer().getInventory().getHelmet();
+            } else if (newArmorType.equals(ArmorType.CHESTPLATE) && !isAirOrNull(e.getPlayer().getInventory().getChestplate())) {
+                currentArmorPiece = e.getPlayer().getInventory().getChestplate();
+            } else if (newArmorType.equals(ArmorType.LEGGINGS) && !isAirOrNull(e.getPlayer().getInventory().getLeggings())) {
+                currentArmorPiece = e.getPlayer().getInventory().getLeggings();
+            } else if (newArmorType.equals(ArmorType.BOOTS) && !isAirOrNull(e.getPlayer().getInventory().getBoots())) {
+                currentArmorPiece = e.getPlayer().getInventory().getBoots();
+            }
+            if (currentArmorPiece != null && ArmorType.canReplaceUsingHotBar(item)) {
+                PlayerEquipArmorEvent armorEquipEvent = new PlayerEquipArmorEvent(e.getPlayer(), PlayerEquipArmorEvent.EquipMethod.HOTBAR, ArmorType.matchType(item, true), currentArmorPiece, item);
                 armorEquipEvent.setCancelled(e.isCancelled());
                 Bukkit.getServer().getPluginManager().callEvent(armorEquipEvent);
                 if (armorEquipEvent.isCancelled()) {
                     e.setCancelled(true);
                     player.updateInventory();
-                }
-            } else if (Version.is1v19v4Plus()) {
-                ItemStack currentArmorPiece = null;
-                if (newArmorType.equals(ArmorType.HELMET) && !isAirOrNull(e.getPlayer().getInventory().getHelmet())) {
-                    currentArmorPiece = e.getPlayer().getInventory().getHelmet();
-                } else if (newArmorType.equals(ArmorType.CHESTPLATE) && !isAirOrNull(e.getPlayer().getInventory().getChestplate())) {
-                    currentArmorPiece = e.getPlayer().getInventory().getChestplate();
-                } else if (newArmorType.equals(ArmorType.LEGGINGS) && !isAirOrNull(e.getPlayer().getInventory().getLeggings())) {
-                    currentArmorPiece = e.getPlayer().getInventory().getLeggings();
-                } else if (newArmorType.equals(ArmorType.BOOTS) && !isAirOrNull(e.getPlayer().getInventory().getBoots())) {
-                    currentArmorPiece = e.getPlayer().getInventory().getBoots();
-                }
-                if (currentArmorPiece != null && ArmorType.canReplaceUsingHotBar(item)) {
-                    PlayerEquipArmorEvent armorEquipEvent = new PlayerEquipArmorEvent(e.getPlayer(), PlayerEquipArmorEvent.EquipMethod.HOTBAR, ArmorType.matchType(item, true), currentArmorPiece, item);
-                    armorEquipEvent.setCancelled(e.isCancelled());
-                    Bukkit.getServer().getPluginManager().callEvent(armorEquipEvent);
-                    if (armorEquipEvent.isCancelled()) {
-                        e.setCancelled(true);
-                        player.updateInventory();
-                    }
                 }
             }
         }
