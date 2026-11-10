@@ -77,7 +77,11 @@ public class Version {
         if (index == -1) return serverVersion;
         String mc = serverVersion.substring(index + 4);
         int end = mc.indexOf(')');
-        return (end == -1 ? mc : mc.substring(0, end)).trim();
+        mc = (end == -1 ? mc : mc.substring(0, end)).trim();
+        /* Spigot 1.21.11 prints "(MC: 1.21.11 Unobfuscated)": keep the version only, else contains() saw "1.11" in it */
+        int space = mc.indexOf(' ');
+        if (space > 0 && mc.substring(0, space).contains(".")) mc = mc.substring(0, space);
+        return mc;
     }
 
     /* "1.21" matches 1.21 and every 1.21.x, like the former contains() did, but not 1.210 nor 26.1.21 */

@@ -15,6 +15,18 @@ class VersionTest {
     }
 
     @Test
+    void spigotUnobfuscatedSuffixIsNotTakenForAnOldRelease() {
+        // real Spigot 1.21.11 (BuildTools, 2026-11-10): "1.21.11 Unobfuscated" contains "1.11" -> PROJECTILE_HIT_BLOCK never fired
+        String spigot = "4598-Spigot-56165ca-d74c5d8 (MC: 1.21.11 Unobfuscated)";
+        assertEquals("1.21.11", Version.getMinecraftVersion(spigot));
+        Version.initVersion(spigot);
+        assertTrue(Version.is1v21v11());
+        assertFalse(Version.is1v11());
+        assertFalse(Version.is1v11Less());
+        assertFalse(Version.is1v12Less());
+    }
+
+    @Test
     void paper26v3() {
         Version.initVersion("26.3-26-a255185 (MC: 26.3)");
         assertTrue(Version.is26v3());
