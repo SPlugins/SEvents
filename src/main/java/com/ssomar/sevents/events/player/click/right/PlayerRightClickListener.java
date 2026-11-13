@@ -1,5 +1,6 @@
 package com.ssomar.sevents.events.player.click.right;
 
+import com.ssomar.sevents.events.RightClickSettings;
 import com.ssomar.sevents.events.player.click.CancelOffHandInteractionManager;
 import com.ssomar.sevents.events.player.click.TooManyInteractionManager;
 import com.ssomar.sevents.version.Version;
@@ -52,6 +53,18 @@ public class PlayerRightClickListener implements Listener {
     /* I need to be in MONITOR here because CrazyCrates has is one with HIGHTEST , and I need that my event check if the event of CrazyCrates is cancelled or not */
     @EventHandler(priority = EventPriority.MONITOR)
     public void playerInteractEvent(PlayerInteractEvent e) {
+        if (RightClickSettings.isBeforeOtherPlugins()) return;
+        onInteract(e);
+    }
+
+    /* RightClickSettings.beforeOtherPlugins: before the plugins that change the item in hand (PyroFarming grow station) */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void playerInteractEventBeforeOthers(PlayerInteractEvent e) {
+        if (!RightClickSettings.isBeforeOtherPlugins()) return;
+        onInteract(e);
+    }
+
+    private void onInteract(PlayerInteractEvent e) {
 
         Player p = e.getPlayer();
         UUID pUUID = p.getUniqueId();
